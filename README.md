@@ -11,9 +11,9 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
 | Gesture on secondary screen | Effect on primary screen |
 |-----------------------------|--------------------------|
 | Slide finger                | Move cursor              |
-| Quick tap (< 150 ms)        | Click at cursor position |
-| Hold ~120 ms then slide     | Drag / scroll            |
-| Hold ~700 ms then drag      | Long-press drag (drag & drop) |
+| Quick tap         | Click at cursor position |
+| Hold ~ then slide     | Drag / scroll            |
+| Hold ~ ms then drag      | Long-press drag (drag & drop) |
 | `[+] NAV-LOCK` button       | Block swipe-out navigation (keeps app open) |
 
 ---
