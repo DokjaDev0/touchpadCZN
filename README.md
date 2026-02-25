@@ -1,6 +1,6 @@
 # touchpadCZN
 
-A dual-display Android controller that turns the **secondary screen of the AYN Thor** (or any Android device with two displays) into a **pixel-art trackpad** that controls the primary screen with real touch gestures.
+A dual-display Android controller that turns the **secondary screen of the AYN Thor** (or any Android device with two displays) into a **trackpad** that controls the primary screen with real touch gestures.
 
 ---
 
