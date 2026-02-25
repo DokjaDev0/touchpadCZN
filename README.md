@@ -18,30 +18,6 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
 
 ---
 
-## Screenshots
-
-> *(secondary display — pixel art UI)*
-
-```
-╔══════════════════════════════╗
-║  ·  ·  ·  ·  ·  ·  ·  ·    ║
-║                              ║
-║    > SLIDE     : move cursor ║
-║                              ║
-║    > TAP       : click       ║
-║                              ║
-║    > HOLD+DRAG : scroll/drag ║
-║                              ║
-║  ·  ·  ·  ·  ·  ·  ·  ·    ║
-╠══════════════════════════════╣
-║  SPEED:  [Normal [2x]] [Fast [3.5x]] ║
-╠══════════════════════════════╣
-║  [+] NAV-LOCK              ■ ║
-╚══════════════════════════════╝
-```
-
----
-
 ## Requirements
 
 - Android **9.0 (API 28)** or higher
