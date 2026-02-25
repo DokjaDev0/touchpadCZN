@@ -13,7 +13,7 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
 | Slide finger                | Move cursor              |
 | Quick tap         | Click at cursor position |
 | Hold ~ then slide     | Drag / scroll            |
-| Hold ~ ms then drag      | Long-press drag (drag & drop) |
+| Hold ~  then drag      | Long-press drag (drag & drop) |
 | `[+] NAV-LOCK` button       | Block swipe-out navigation (keeps app open) |
 
 ---
