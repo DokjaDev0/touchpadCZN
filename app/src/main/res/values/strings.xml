@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">touchpadCZN</string>
+
+    <!-- Accessibility service metadata -->
+    <string name="accessibility_service_label">touchpadCZN Controller</string>
+    <string name="accessibility_service_description">Enables the secondary display to act as a trackpad, controlling the primary screen through touch gestures.</string>
+
+    <!-- Main activity: buttons -->
+    <string name="btn_enable_accessibility">Enable Accessibility Service</string>
+    <string name="btn_accessibility_enabled">Accessibility: ACTIVE ✓</string>
+    <string name="btn_launch">Launch Secondary Display Controller</string>
+
+    <!-- Main activity: status messages -->
+    <string name="status_no_secondary">No secondary display detected.</string>
+    <string name="status_need_accessibility">Please enable the Accessibility Service to allow gesture injection.</string>
+    <string name="status_service_inactive">Service enabled but not yet running. Press Launch.</string>
+    <string name="status_ready">Ready. Use the secondary display as a trackpad.</string>
+    <string name="status_controller_active">Controller active on secondary display.</string>
+
+    <!-- Main activity: section labels -->
+    <string name="label_displays">Detected displays:</string>
+    <string name="label_status">Status:</string>
+
+    <!-- Main activity: usage instructions -->
+    <string name="instructions">
+        1. Enable the Accessibility Service\n
+        2. Press Launch Controller\n
+        3. Use the bottom display as a trackpad:\n
+        \u2003— Slide: move cursor\n
+        \u2003— Hold then slide: drag\n
+        \u2003— Tap anywhere: click at cursor\n
+        \u2003— Right strip: scroll
+    </string>
+</resources>

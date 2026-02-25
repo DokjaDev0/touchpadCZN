@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Pixel-art mouse icon.
+    Canvas: 108×108 dp. Safe zone: circle r=36 centred at (54,54).
+
+    Grid: 8 cols × 12 rows, each pixel = 6 dp.
+    Mouse body centred: X offset=30 (cols 0-7 → x 30-78), Y offset=24 (rows 0-11 → y 24-96).
+
+    Layout:
+      Row 0  (y=24): crown top       — cols 2-5  (#E94560)
+      Rows 1-4 (y=30): left button   — cols 1-2  (#E94560)
+      Rows 1-4 (y=30): right button  — cols 5-6  (#CC3348)
+      Rows 2-4 (y=36): scroll wheel  — cols 3-4  (#FFAA00)
+      Rows 5-9 (y=54): body          — cols 1-6  (#E94560)
+      Row 10 (y=84):  taper          — cols 2-5  (#E94560)
+      Row 11 (y=90):  cord           — cols 3-4  (#BB2240)
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Crown (row 0: y=24–30, cols 2–5: x=42–66) -->
+    <path android:fillColor="#E94560"
+        android:pathData="M42,24 l24,0 l0,6 l-24,0 z"/>
+
+    <!-- Left button (rows 1–4: y=30–54, cols 1–2: x=36–48) -->
+    <path android:fillColor="#E94560"
+        android:pathData="M36,30 l12,0 l0,24 l-12,0 z"/>
+
+    <!-- Right button (rows 1–4: y=30–54, cols 5–6: x=60–72) -->
+    <path android:fillColor="#CC3348"
+        android:pathData="M60,30 l12,0 l0,24 l-12,0 z"/>
+
+    <!-- Scroll wheel (rows 2–4: y=36–54, cols 3–4: x=48–60) -->
+    <path android:fillColor="#FFAA00"
+        android:pathData="M48,36 l12,0 l0,18 l-12,0 z"/>
+
+    <!-- Body (rows 5–9: y=54–84, cols 1–6: x=36–72) -->
+    <path android:fillColor="#E94560"
+        android:pathData="M36,54 l36,0 l0,30 l-36,0 z"/>
+
+    <!-- Taper (row 10: y=84–90, cols 2–5: x=42–66) -->
+    <path android:fillColor="#E94560"
+        android:pathData="M42,84 l24,0 l0,6 l-24,0 z"/>
+
+    <!-- Cord (row 11: y=90–96, cols 3–4: x=48–60) -->
+    <path android:fillColor="#BB2240"
+        android:pathData="M48,90 l12,0 l0,6 l-12,0 z"/>
+
+    <!-- Highlight: top-left pixel of left button -->
+    <path android:fillColor="#FF7799"
+        android:pathData="M36,30 l6,0 l0,6 l-6,0 z"/>
+
+    <!-- Highlight: top-left pixel of scroll wheel -->
+    <path android:fillColor="#FFCC44"
+        android:pathData="M48,36 l6,0 l0,6 l-6,0 z"/>
+
+    <!-- Shadow: bottom-right pixel of body -->
+    <path android:fillColor="#BB2240"
+        android:pathData="M66,78 l6,0 l0,6 l-6,0 z"/>
+
+</vector>

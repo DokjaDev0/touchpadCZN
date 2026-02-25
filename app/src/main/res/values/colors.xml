@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#1A1A2E</color>
+    <color name="bg_medium">#16213E</color>
+    <color name="bg_light">#0F3460</color>
+    <color name="accent">#E94560</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#AAAACC</color>
+    <color name="grid_line">#2D3561</color>
+    <color name="scroll_zone">#0A2040</color>
+</resources>

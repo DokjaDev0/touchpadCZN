@@ -1,0 +1,32 @@
+# Built APKs and build output
+*.apk
+*.aab
+*.ap_
+build/
+app/build/
+
+# Android Studio / IntelliJ IDEA
+*.iml
+.idea/
+*.class
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration — contains SDK path, do NOT commit
+local.properties
+
+# Android Keystore files — NEVER commit signing keys
+*.jks
+*.keystore
+
+# OS generated
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# Log files
+*.log
