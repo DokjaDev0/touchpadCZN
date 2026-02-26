@@ -40,7 +40,7 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
    ```bash
    ./gradlew assembleDebug
    ```
-   Output: `app/build/outputs/apk/debug/app-debug.apk`
+   Output: `app/build/outputs/apk/debug/touchpadczn-1.0.1.apk`
 
 3. **Install on device**
    ```bash
@@ -49,7 +49,7 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
 
 ### Option B — Install prebuilt APK
 
-Download `touchpadCZN.apk` from the [Releases](../../releases) page and sideload it on your device.
+Download `touchpadczn-1.0.1.apk` from the [Releases](../../releases) page and sideload it on your device.
 
 ---
 
@@ -134,7 +134,7 @@ Android's Accessibility API provides `dispatchGesture(GestureDescription, callba
 startTouch()
     │
     ▼
-[initial stroke 50ms, isContinued=true]
+[initial stroke 40ms, isContinued=true]
     │ onCompleted callback
     ▼
 [next stroke 40ms, isContinued=true] ◄── moveTouch() updates lastX/lastY
@@ -147,7 +147,7 @@ startTouch()
 [final stroke 40ms, isContinued=false] → Android sends pointer-up event
 ```
 
-While the finger is stationary, the app sends ±0.5 px oscillating stubs to keep the gesture chain alive without drifting position. 0.5 px is far below Android's long-press slop (~8–16 px), so long-press and drag-and-drop still trigger normally.
+While the finger is stationary, the app alternates ±1 px in X (choosing the direction that stays within screen bounds) to keep the gesture chain alive without drifting position. 1 px is far below Android's long-press slop (~8–16 px), so long-press and drag-and-drop still trigger normally.
 
 ### Touchpad state machine
 
@@ -155,15 +155,15 @@ While the finger is stationary, the app sends ±0.5 px oscillating stubs to keep
 ACTION_DOWN
     │
     ▼
- PENDING ──── fast swipe (>15px/frame) ──────▶ HOVER (cursor only)
-    │                                              │
-    │ hold 120ms (slow/no movement)                │ any move
-    ▼                                              ▼
-  DRAG ◄─── restart if chain breaks ─── move + gestureActive=false
-    │
-    │ ACTION_UP
-    ▼
-  endTouch() → final release stroke
+ PENDING ──── total displacement > 30px ──────▶ HOVER (cursor only)
+    │                                               │
+    │ hold 120ms (finger travels < 30px total)      │ any move → pointer accel
+    ▼                                               │ historical samples consumed
+  DRAG ◄─── restart immediately if chain breaks     │ fling on finger lift
+    │                                               │
+    │ ACTION_UP                                     │
+    ▼                                               ▼
+  endTouch() → final release stroke            cursor glides to stop
 ```
 
 ---
@@ -220,11 +220,27 @@ app/
 
 ---
 
+## Changelog
+
+### v1.0.1
+- Hold detection now uses **cumulative displacement** from touch-down (instead of per-frame speed), making it immune to MotionEvent batching — natural finger drift no longer cancels the hold timer
+- Fixed degenerate zero-length oscillation paths at screen edges that were silently breaking the gesture chain
+- `STROKE_DURATION_MS` raised to 40 ms for a more stable chain with fewer system-side cancellations
+- Broken gesture chain restarts immediately with no cooldown, eliminating micro-tap gaps on the primary display
+- Historical MotionEvent samples consumed on every move for a continuous smooth cursor path
+- **Inertia fling** on finger lift — cursor continues with momentum and decelerates naturally (VelocityTracker + OverScroller)
+- TAP_SLOP tightened to 12 px to reduce accidental taps
+
+### v1.0
+- Initial release
+
+---
+
 ## Known limitations
 
 - Requires manual Accessibility Service activation (Android does not allow apps to enable it programmatically — this is a security feature).
 - On some custom Android builds, `GLOBAL_ACTION_HOME` may behave unexpectedly; the app uses an explicit `ACTION_MAIN` / `CATEGORY_HOME` intent as a workaround.
-- The `continueStroke` chain may occasionally be cancelled by the Android gesture system (e.g., during system animations). The app auto-restarts the chain immediately on the next move event.
+- The `continueStroke` chain may occasionally be cancelled by the Android gesture system (e.g., during system animations). The app restarts the chain immediately on the next move event.
 
 ---
 
