@@ -20,8 +20,8 @@ class ControllerAccessibilityService : AccessibilityService() {
         /** Duration of each continuation stroke segment. */
         private const val STROKE_DURATION_MS = 40L
 
-        /** Duration of the initial stroke — long enough to register reliably. */
-        private const val INITIAL_STROKE_MS = 50L
+        /** Duration of the initial stroke. */
+        private const val INITIAL_STROKE_MS = 40L
 
         /** Cursor auto-hide after idle. */
         private const val CURSOR_IDLE_HIDE_MS = 3_000L
@@ -249,9 +249,9 @@ class ControllerAccessibilityService : AccessibilityService() {
      *
      * Movement case: builds a straight-line path from strokeEnd → lastX/lastY.
      *
-     * Stationary case (finger held still): alternates ±0.5 px to keep the chain
-     * alive with a valid non-degenerate path while barely moving the touch point
-     * (well below Android's 8–16 px long-press slop, so long-press still fires).
+     * Stationary case (finger held still): alternates ±1 px in X, picking the direction
+     * that keeps the path within screen bounds. This keeps the chain alive without drift
+     * and stays well below Android's long-press slop threshold.
      *
      * Release case: sends a final stroke with isContinued=false to lift the finger.
      */
@@ -273,9 +273,13 @@ class ControllerAccessibilityService : AccessibilityService() {
             val endY: Float
 
             if (isStationary) {
-                // Oscillate ±0.5 px — keeps chain alive, stays below long-press slop
+                // Alternate ±1 px in X, choosing the direction that stays within bounds.
+                // This prevents degenerate zero-length paths at screen edges, which would
+                // break the continueStroke chain and cause an unintended finger-up event.
                 stubToggle = !stubToggle
-                val ox = (fromX + if (stubToggle) 0.5f else -0.5f).coerceIn(1f, screenW - 1f)
+                val delta = if (stubToggle) 1f else -1f
+                val ox = if ((fromX + delta) in 1f..(screenW - 1f)) fromX + delta
+                         else fromX - delta
                 path = Path().apply { moveTo(fromX, fromY); lineTo(ox, fromY) }
                 endX = ox; endY = fromY
             } else {

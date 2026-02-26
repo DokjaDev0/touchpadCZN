@@ -7,7 +7,10 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
+import android.view.ViewConfiguration
+import android.widget.OverScroller
 import kotlin.math.cos
 import kotlin.math.PI
 import kotlin.math.sqrt
@@ -32,19 +35,20 @@ class TouchpadView(
     // ── Constants ──────────────────────────────────────────────────────────────
 
     private val TAP_MAX_MS = 150L
-    private val TAP_SLOP   = 20f
+    private val TAP_SLOP   = 12f
     private val HOLD_MS    = 120L
 
     /**
-     * Per-event pixel threshold to classify a move as a deliberate fast swipe
-     * (cursor-only mode). At ~120fps a frame is ~8ms. A fast swipe covers > 15 px
-     * per frame; slow hold drift stays < 5 px per frame.
-     * Only exceeding this threshold cancels the hold timer → HOVER.
+     * Total displacement from ACTION_DOWN required to classify a touch as a swipe.
+     * Using cumulative distance (not per-frame speed) makes hold detection immune to
+     * event batching: even if several samples arrive in a single handleMove call, the
+     * finger cannot have travelled > 30 px total if the user intends to hold.
      */
-    private val FAST_SWIPE_PX = 15f
+    private val SWIPE_SLOP_PX = 30f
 
-    private val EDGE_ZONE      = 0.30f
-    private val EDGE_BOOST_MAX = 3.5f
+
+    private val EDGE_ZONE      = 0.12f
+    private val EDGE_BOOST_MAX = 1.8f
 
     // ── Pixel art paints ───────────────────────────────────────────────────────
 
@@ -101,6 +105,29 @@ class TouchpadView(
 
     private val handler = Handler(Looper.getMainLooper())
 
+    // ── Fling / inertia ────────────────────────────────────────────────────────
+
+    private var velocityTracker: VelocityTracker? = null
+    private val flingScroller = OverScroller(context)
+    private val maxFlingVelocity = ViewConfiguration.get(context).scaledMaximumFlingVelocity.toFloat()
+    private val minFlingVelocity = ViewConfiguration.get(context).scaledMinimumFlingVelocity.toFloat()
+
+    /** After lifting the finger in HOVER mode, continues cursor movement with momentum and decelerates naturally. */
+    private val flingRunnable = object : Runnable {
+        override fun run() {
+            val svc = ControllerAccessibilityService.instance ?: return
+            if (flingScroller.computeScrollOffset()) {
+                svc.updateCursorPosition(
+                    flingScroller.currX.toFloat(),
+                    flingScroller.currY.toFloat()
+                )
+                handler.postDelayed(this, 16)
+            }
+        }
+    }
+
+    // ── Hold timer ─────────────────────────────────────────────────────────────
+
     /** Fires after [HOLD_MS] — starts the gesture chain on the primary display. */
     private val holdRunnable = Runnable {
         val svc = ControllerAccessibilityService.instance ?: return@Runnable
@@ -112,6 +139,14 @@ class TouchpadView(
     }
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+    override fun onDetachedFromWindow() {
+        handler.removeCallbacks(flingRunnable)
+        flingScroller.forceFinished(true)
+        velocityTracker?.recycle()
+        velocityTracker = null
+        super.onDetachedFromWindow()
+    }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
@@ -218,6 +253,10 @@ class TouchpadView(
     }
 
     private fun handleDown(event: MotionEvent, svc: ControllerAccessibilityService) {
+        // Cancel any running fling
+        handler.removeCallbacks(flingRunnable)
+        flingScroller.forceFinished(true)
+
         svc.forceResetGesture()
         downX       = event.x
         downY       = event.y
@@ -228,57 +267,87 @@ class TouchpadView(
         downTime    = SystemClock.elapsedRealtime()
         state       = State.PENDING
         isTouching  = true
+
+        velocityTracker?.recycle()
+        velocityTracker = VelocityTracker.obtain()
+        velocityTracker!!.addMovement(event)
+
         invalidate()
         handler.postDelayed(holdRunnable, HOLD_MS)
     }
 
     private fun handleMove(event: MotionEvent, svc: ControllerAccessibilityService) {
-        val dx = event.x - prevFingerX
-        val dy = event.y - prevFingerY
-        prevFingerX = event.x
-        prevFingerY = event.y
-        fingerX     = event.x
-        fingerY     = event.y
+        velocityTracker?.addMovement(event)
+
+        fingerX = event.x
+        fingerY = event.y
         invalidate()
+
+        // Track prev position through history + current sample
+        var prevX = prevFingerX
+        var prevY = prevFingerY
 
         when (state) {
             State.PENDING -> {
-                // Only cancel hold timer if THIS frame's movement is a fast swipe.
-                // Slow drift during a hold (< FAST_SWIPE_PX per event) is ignored,
-                // so hold+slide at moderate speed still triggers DRAG correctly.
-                val frameDist = sqrt(dx * dx + dy * dy)
-                if (frameDist > FAST_SWIPE_PX) {
+                // Use cumulative displacement from the initial touch point, not per-frame speed.
+                // This is immune to event batching: regardless of how many samples arrive in one
+                // handleMove call, the finger cannot have travelled > SWIPE_SLOP_PX if the user
+                // intends to hold.
+                val totalDx   = event.x - downX
+                val totalDy   = event.y - downY
+                val totalDist = sqrt(totalDx * totalDx + totalDy * totalDy)
+                if (totalDist > SWIPE_SLOP_PX) {
                     handler.removeCallbacks(holdRunnable)
                     state = State.HOVER
-                    applyCursorMove(dx, dy, event, svc)
+                    // Apply historical samples + current position for accurate cursor placement
+                    for (i in 0 until event.historySize) {
+                        val hx = event.getHistoricalX(i)
+                        val hy = event.getHistoricalY(i)
+                        applyCursorMove(hx - prevX, hy - prevY, svc)
+                        prevX = hx; prevY = hy
+                    }
+                    applyCursorMove(event.x - prevX, event.y - prevY, svc)
                 }
             }
             State.HOVER -> {
-                applyCursorMove(dx, dy, event, svc)
+                // Consume all batched historical samples so the cursor follows a continuous path
+                for (i in 0 until event.historySize) {
+                    val hx = event.getHistoricalX(i)
+                    val hy = event.getHistoricalY(i)
+                    applyCursorMove(hx - prevX, hy - prevY, svc)
+                    prevX = hx; prevY = hy
+                }
+                applyCursorMove(event.x - prevX, event.y - prevY, svc)
             }
             State.DRAG -> {
+                val dx   = event.x - prevX
+                val dy   = event.y - prevY
                 val base = SettingsManager.getSensitivity(context)
                 val sens = edgeSensitivity(event.x, event.y, base)
                 val newX = (svc.cursorX + dx * sens).coerceIn(0f, primaryW.toFloat())
                 val newY = (svc.cursorY + dy * sens).coerceIn(0f, primaryH.toFloat())
                 svc.updateCursorPosition(newX, newY)
                 if (svc.gestureActive) {
-                    // Normal: keep feeding the active gesture chain
                     svc.moveTouch(newX, newY)
                 } else {
-                    // Chain broke (cancelled by system) — restart immediately at cursor pos
+                    // Chain broken — restart immediately to minimise the finger-up gap.
+                    // Any delay here would appear as an unintended tap on the primary screen.
                     svc.startTouch(newX, newY)
                 }
             }
         }
+
+        prevFingerX = event.x
+        prevFingerY = event.y
     }
 
-    private fun applyCursorMove(dx: Float, dy: Float, event: MotionEvent,
-                                svc: ControllerAccessibilityService) {
-        val base = SettingsManager.getSensitivity(context)
-        val sens = edgeSensitivity(event.x, event.y, base)
-        val newX = (svc.cursorX + dx * sens).coerceIn(0f, primaryW.toFloat())
-        val newY = (svc.cursorY + dy * sens).coerceIn(0f, primaryH.toFloat())
+    private fun applyCursorMove(dx: Float, dy: Float, svc: ControllerAccessibilityService) {
+        val base  = SettingsManager.getSensitivity(context)
+        val speed = sqrt(dx * dx + dy * dy)
+        // Pointer acceleration: slow moves are precise, fast moves cover more ground
+        val accel = (speed / 6f).coerceIn(0.4f, 1.8f)
+        val newX  = (svc.cursorX + dx * base * accel).coerceIn(0f, primaryW.toFloat())
+        val newY  = (svc.cursorY + dy * base * accel).coerceIn(0f, primaryH.toFloat())
         svc.updateCursorPosition(newX, newY)
     }
 
@@ -310,10 +379,28 @@ class TouchpadView(
                     svc.performTapAtCursor()
                 }
             }
-            State.HOVER -> Unit
-            State.DRAG  -> svc.endTouch()
+            State.HOVER -> {
+                // Launch inertia fling — cursor continues with momentum like a real trackpad
+                velocityTracker?.let { vt ->
+                    vt.computeCurrentVelocity(1000, maxFlingVelocity)
+                    val sensitivity = SettingsManager.getSensitivity(context)
+                    val vx = vt.xVelocity * sensitivity
+                    val vy = vt.yVelocity * sensitivity
+                    if (sqrt(vx * vx + vy * vy) > minFlingVelocity) {
+                        flingScroller.fling(
+                            svc.cursorX.toInt(), svc.cursorY.toInt(),
+                            vx.toInt(), vy.toInt(),
+                            0, primaryW, 0, primaryH
+                        )
+                        handler.post(flingRunnable)
+                    }
+                }
+            }
+            State.DRAG -> svc.endTouch()
         }
 
+        velocityTracker?.recycle()
+        velocityTracker = null
         isTouching = false
         invalidate()
     }
