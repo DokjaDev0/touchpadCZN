@@ -32,7 +32,7 @@ You install this app on your AYN Thor (or similar dual-display Android handheld)
 
 1. **Clone the repo**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/touchpadCZN.git
+   git clone https://github.com/DokjaDev0/touchpadCZN.git
    cd touchpadCZN
    ```
 
