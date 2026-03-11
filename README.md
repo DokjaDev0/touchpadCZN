@@ -247,3 +247,4 @@ app/
 ## License
 
 MIT — free to use, modify, and distribute. See [LICENSE](LICENSE) for details.
+
